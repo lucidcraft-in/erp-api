@@ -144,7 +144,7 @@ router.post('/create',upload.single('productImage'), async (req, res) => {
       // Logs
       addLog(req.body.name,'ITEM','CREATE')
     }
-    
+
 
 
     return res.status(200).json(item);
@@ -152,6 +152,7 @@ router.post('/create',upload.single('productImage'), async (req, res) => {
     return res.json(err);
   }
 });
+
 
 // get items
 
