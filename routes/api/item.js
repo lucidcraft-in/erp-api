@@ -6,18 +6,56 @@ const getId = require('../../utils/getId');
 const path = require('path')
 const addLog = require('../logs/logs')
 const multer = require('multer');
-const storage = multer.diskStorage({
-  destination:(req,file,cb)=>{
-    cb(null, 'Images')
-  },
-filename:(req,file,cb)=>{
-  console.log(file)
-  cb(null, Date.now() + path.extname(file.originalname))
-}
-})
-const upload = multer({storage:storage});
+const aws = require('aws-sdk');
+const multerS3 = require('multer-s3');
+ 
 
 
+// const storage = multer.diskStorage({
+//   destination:(req,file,cb)=>{
+//     cb(null, 'Images')
+//   },
+// filename:(req,file,cb)=>{
+//   console.log(file)
+//   cb(null, Date.now() + path.extname(file.originalname))
+// }
+// })
+// const upload = multer({storage:storage});
+
+
+// UPLOAD IMAGE TO S3
+aws.config.update({
+  secretAccessKey: 'cWjtXmugOcHamwgnN9xuL7J5W25koOGla7D5g5gk',
+  accessKeyId: 'AKIAQM5SDTCW4ZRGZWYA',
+  region: 'ap-south-1',
+});
+
+const s3 = new aws.S3();
+
+const fileFilter = (req, file, cb) => {
+  if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/png') {
+    cb(null, true);
+  } else {
+    cb(new Error('Invalid Mime Type, only JPEG and PNG'), false);
+  }
+};
+
+const upload = multer({
+  fileFilter,
+  storage: multerS3({
+    s3,
+    bucket: 'gromart-account',
+    acl: 'private',
+    metadata: function (req, file, cb) {
+      cb(null, { fieldName: 'TESTING_META_DATA!' });
+    },
+    key: function (req, file, cb) {
+      let myFile = file.mimetype.split('/');
+      const fileType = myFile[myFile.length - 1];
+      cb(null, Date.now().toString() + '.' + fileType);
+    },
+  }),
+});
 
 
 // Add Item
@@ -35,10 +73,30 @@ router.post('/create',upload.single('productImage'), async (req, res) => {
  
     let image;
  
-console.log(req.body.ifImage,'req.body.ifImage')
-    if(req.body.ifImage){
+ 
+    if (req.body.ifImage) {
       
-      image =  req.file.filename;
+            let myFile = req.file.originalname.split('.');
+            const fileType = myFile[myFile.length - 1];
+
+            const params = {
+              Bucket: 'gromart-account',
+              Key: `${fileType}`,
+              Body: req.file,
+            };
+
+            s3.upload(params, (error, data) => {
+              //  if (error) {
+              //    res.status(500).send(error);
+              //  }
+
+              console.log(req.file.location);
+              image = req.file.location;
+
+              // res.status(200).send({ path: req.file.location });
+            });
+      
+       
    
     }else{
       
@@ -126,8 +184,26 @@ router.post('/update/:id',upload.single('productImage'), async (req, res) => {
    
     if(req.body.ifImageEdited === 'true'){
        
-      console.log('if')
-      image =  req.file.filename;
+             let myFile = req.file.originalname.split('.');
+             const fileType = myFile[myFile.length - 1];
+
+             const params = {
+               Bucket: 'gromart-account',
+               Key: `${fileType}`,
+               Body: req.file,
+             };
+
+             s3.upload(params, (error, data) => {
+               //  if (error) {
+               //    res.status(500).send(error);
+               //  }
+
+               console.log(req.file.location);
+               image = req.file.location;
+
+               // res.status(200).send({ path: req.file.location });
+             });
+     
    
     }else{
        
@@ -212,10 +288,30 @@ router.post('/category/create', upload.single('image'),async (req, res) => {
     let image;
  
 // console.log(req.body.ifImage,'req.body.ifImage')
-    if(req.body.ifImage){
+    if (req.body.ifImage) {
       
-      image =  req.file.filename;
-      console.log(req.file.filename,'image')
+        let myFile = req.file.originalname.split('.');
+        const fileType = myFile[myFile.length - 1];
+
+        const params = {
+          Bucket: 'gromart-account',
+          Key: `${fileType}`,
+          Body: req.file,
+      };
+      
+      s3.upload(params, (error, data) => {
+        //  if (error) {
+        //    res.status(500).send(error);
+        //  }
+ 
+        console.log(req.file.location);
+          image = req.file.location;
+
+        // res.status(200).send({ path: req.file.location });
+      });
+      
+    
+       
     }else{
       
       image ='';
